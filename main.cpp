@@ -4,6 +4,7 @@
 #include <mutex>
 #include <functional>
 #include <chrono>
+#include <cstdio>
 
 #include "SDL.h"
 #include "GL/glew.h"
@@ -33,6 +34,7 @@ void CheckSDLError(int line = -1)
     }
 }
 
+
 int main(int argc, char* argv[])
 {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -42,7 +44,6 @@ int main(int argc, char* argv[])
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 4);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-    SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
 
 
     auto window = SDL_CreateWindow("Programming",
@@ -56,14 +57,16 @@ int main(int argc, char* argv[])
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
     SDL_GLContext glContext = SDL_GL_CreateContext(window);
-    SDL_GLContext initContext = SDL_GL_CreateContext(window);
+    SDL_GL_MakeCurrent(window, glContext);
 
     glewInit();
+
 
     glViewport(0, 0, SCREENWIDTH, SCREENHEIGHT);
 
     std::cout << glGetString(GL_VERSION) << std::endl;
 
+    
     Game g = Game();
     bool running = true;
 
@@ -74,8 +77,10 @@ int main(int argc, char* argv[])
             tick_limiter.sleep();
         }
     });
-    
-    auto frame_limiter = TimeLimiter(60);
+
+    int frame_counter = 0;
+    const int fps = 60;
+    auto frame_limiter = TimeLimiter(fps);
     while (running) {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
@@ -83,6 +88,14 @@ int main(int argc, char* argv[])
                 running = false;
             }
         }
+
+        if (frame_counter > fps) {
+            char title[50];
+            snprintf(title, 50, "Programming FPS: %f", frame_limiter.dt() * fps * fps);
+            SDL_SetWindowTitle(window, title);
+            frame_counter = 0;
+        }
+        ++frame_counter;
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
@@ -95,7 +108,6 @@ int main(int argc, char* argv[])
 
     tick.join();
     SDL_GL_DeleteContext(glContext);
-    SDL_GL_DeleteContext(initContext);
     SDL_DestroyWindow(window);
     SDL_Quit();
     
