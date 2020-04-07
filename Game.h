@@ -1,22 +1,12 @@
 #pragma once
 
-struct Pos {
-	float x;
-	float y;
-	float z;
-	float w;
-};
-
-struct Col {
-	float r;
-	float g;
-	float b;
-	float a;
-};
+#include "glm/vec4.hpp"
+#include "glm/mat4x4.hpp"
+#include "glm/gtc/matrix_transform.hpp"
 
 struct Vertex {
-	Pos pos{ 0, 0, 0, 1 };
-	Col col{ 1.f, 1, 1, 1 };
+	glm::dvec4 pos{ 0.0f };
+	glm::dvec4 col{ 1.0f };
 };
 
 class Game
@@ -29,13 +19,7 @@ public:
 private:
 	void CheckShader(unsigned int shader);
 
-	Vertex vertices[3] = { 0 };
-
-	float positions[9] = {
-	-0.5f, -0.5f, 0.0f,
-	 0.5f, -0.5f, 0.0f,
-	 0.0f,  0.5f, 0.0f
-	};
+	Vertex vertices[3];
 
 	const char* vertexShaderSource = R"(
 		#version 330 core
@@ -59,11 +43,8 @@ private:
 		void main()
 		{
 			FragColor = aCol;
-			//FragColor = vec4(0.3, 0.4, 0.5, 1.0);
 		} 
 	)";
-
-
 
 	unsigned int VBO, VAO;
 	unsigned int vertexShader;

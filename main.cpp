@@ -71,7 +71,7 @@ int main(int argc, char* argv[])
     bool running = true;
 
     std::thread tick([&]() {
-        auto tick_limiter = TimeLimiter(20);
+        auto tick_limiter = TimeLimiter(60);
         while (running) {
             g.tick(tick_limiter.dt());
             tick_limiter.sleep();
@@ -89,13 +89,13 @@ int main(int argc, char* argv[])
             }
         }
 
-        if (frame_counter > fps) {
+        /*if (frame_counter > fps) {
             char title[50];
             snprintf(title, 50, "Programming FPS: %f", frame_limiter.dt() * fps * fps);
             SDL_SetWindowTitle(window, title);
             frame_counter = 0;
         }
-        ++frame_counter;
+        ++frame_counter;*/
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
