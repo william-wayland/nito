@@ -34,16 +34,31 @@ void CheckGLError()
 }
 
 
-Game::Game() {
+Game::Game(const size_t screen_width, const size_t screen_height, const std::atomic<bool>* keys, const std::atomic<int>* delta_mouse)
+	: m_screen_width(screen_width)
+	, m_screen_height(screen_height)
+	, m_keys(keys)
+	, m_delta_mouse(delta_mouse)
+{
 
 	//
-	vertices[0].pos = { -0.5, -0.5, 0.0, 1.0 };
-	vertices[1].pos = { 0.5, -0.5, 0.0, 1.0 };
-	vertices[2].pos = { 0.0, 0.5, 0.0, 1.0 };
+	vertices[0].pos = { -1.0, -1.0,  1.0, 1.0 };
+	vertices[1].pos = { 1.0, -1.0,  1.0, 1.0 };
+	vertices[2].pos = { 1.0,  1.0,  1.0, 1.0 };
+	vertices[3].pos = { -1.0,  1.0,  1.0, 1.0 };
+	vertices[4].pos = { -1.0, -1.0, -1.0, 1.0 };
+	vertices[5].pos = { 1.0, -1.0, -1.0, 1.0 };
+	vertices[6].pos = { 1.0,  1.0, -1.0, 1.0 };
+	vertices[7].pos = { -1.0,  1.0, -1.0, 1.0 };
 
 	vertices[0].col = { 0.5, 0.5, 0.0, 1.0 };
-	vertices[1].col = { 0.0, 0.5, 0.0, 1.0 };
+	vertices[1].col = { 0.0, 0.0, 0.0, 1.0 };
 	vertices[2].col = { 0.5, 0.5, 0.5, 1.0 };
+	vertices[3].col = { 1.0, 0.5, 0.0, 1.0 };
+	vertices[4].col = { 0.0, 0.5, 0.0, 1.0 };
+	vertices[5].col = { 0.5, 0.5, 1.0, 1.0 };
+	vertices[6].col = { 0.5, 0.5, 0.0, 1.0 };
+	vertices[7].col = { 0.0, 0.0, 0.5, 1.0 };
 
 	glGenVertexArrays(1, &VAO);
 	glBindVertexArray(VAO);
@@ -51,6 +66,31 @@ Game::Game() {
 	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices[0], GL_STATIC_DRAW);
+
+	GLushort cube_elements[36] = {
+		// front
+		0, 1, 2,
+		2, 3, 0,
+		// right
+		1, 5, 6,
+		6, 2, 1,
+		// back
+		7, 6, 5,
+		5, 4, 7,
+		// left
+		4, 0, 3,
+		3, 7, 4,
+		// bottom
+		4, 5, 1,
+		1, 0, 4,
+		// top
+		3, 2, 6,
+		6, 7, 3
+	};
+
+	glGenBuffers(1, &ibo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cube_elements), cube_elements, GL_STATIC_DRAW);
 
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, pos));
@@ -60,6 +100,7 @@ Game::Game() {
 
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 	// shaders
 	vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -83,75 +124,77 @@ Game::Game() {
 	CheckGLError();
 
 	model = glm::mat4(1.0f);  
+	model = glm::translate(model, glm::vec3(0, 0, 0));
 }
 
+static glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+static glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+static glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+static float cameraSpeed = 0.1f;
+static float cameraRotationSpeed = 0.5f;
+static float yaw = -90, pitch = 0, roll = 0;
+
 void Game::tick(double dt) {
-	// Calc ratio correction based on the two dimensions
-	float correction;
-	float deviceRatio = 1;
-	float virtualRatio = 1;
-	float xCorrection = 4;
-	float yCorrection = 4;
 
-	if (virtualRatio < deviceRatio) {
-		correction = yCorrection;
-	}
-	else {
-		correction = xCorrection;
-	}
+	if (m_keys[SDLK_a]) cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+	if (m_keys[SDLK_d]) cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
 
-	// Now when you calc your ortho projection--in this case centered--
-// just divide by the correction
-	double left = -256 / 2.0f / correction;
-	double right = 256 / 2.0f / correction;
-	double bottom = -256 / 2.0f / correction;
-	double top = 256 / 2.0f / correction;
+	if (m_keys[SDLK_s]) cameraPos -= cameraSpeed * cameraFront;
+	if (m_keys[SDLK_w]) cameraPos += cameraSpeed * cameraFront;
+
+	if (m_keys[SDLK_q]) cameraPos -= cameraSpeed * cameraUp;
+	if (m_keys[SDLK_e]) cameraPos += cameraSpeed * cameraUp;
+
+	yaw += m_delta_mouse[0] * cameraRotationSpeed;
+	pitch += m_delta_mouse[1] * cameraRotationSpeed;
+
+	if (pitch > 89.0f)
+		pitch = 89.0f;
+	if (pitch < -89.0f)
+		pitch = -89.0f;
+
+	glm::vec3 direction;
+	direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+	direction.y = sin(-glm::radians(pitch));
+	direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+	cameraFront = glm::normalize(direction);
 
 	model = glm::rotate(model, glm::radians(1.0f), glm::vec3(0, 1, 0));
-
-	/*for (auto it = vertices.begin(); it != vertices.end(); ++it) {
-		it->pos = it->pos * mvp;
-	}*/
+	
 	auto t = static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count()) / 1000.0;
 
-	vertices[0].col.r = (std::sin(t + 3.14 / 2.0) + 1.0) / 2.0;
-	vertices[0].col.g = (std::sin(1.1 * t + 3.14 / 4.0) + 1.0) / 2.0;
-	vertices[0].col.b = (std::sin(1.5 * t) + 1.0) / 2.0;
+	vertices[0].col.r = (std::sin(t + 3.14 / 2.0) + 1.0) / 2.0f;
+	vertices[0].col.g = (std::sin(1.1 * t + 3.14 / 4.0) + 1.0) / 2.0f;
+	vertices[0].col.b = (std::sin(1.5 * t) + 1.0) / 2.0f;
 
-	vertices[1].col.r = (std::sin(2.2 * t + 3.14 / 2.0) + 1.0) / 2.0;
-	vertices[1].col.g = (std::sin(1.1 * t + 3.14 / 4.0) + 1.0) / 2.0;
-	vertices[1].col.b = (std::sin(t) + 1.0) / 2.0;
+	vertices[1].col.r = (std::sin(2.2 * t + 3.14 / 2.0) + 1.0) / 2.0f;
+	vertices[1].col.g = (std::sin(1.1 * t + 3.14 / 4.0) + 1.0) / 2.0f;
+	vertices[1].col.b = (std::sin(t) + 1.0) / 2.0f;
 
-	std::cout << t << std::endl;
-	vertices[2].col.r = (std::sin(t - 3.14 / 2) + 1.0) / 2.0;
-	vertices[2].col.g = (std::sin(1.1 * t - 3.14 / 4) + 1.0) / 2.0;
-	vertices[2].col.b = (std::sin(1.5 * t - 1) + 1.0) / 2.0;
+	vertices[2].col.r = (std::sin(t - 3.14 / 2) + 1.0) / 2.0f;
+	vertices[2].col.g = (std::sin(1.1 * t - 3.14 / 4) + 1.0) / 2.0f;
+	vertices[2].col.b = (std::sin(1.5 * t - 1) + 1.0) / 2.0f;
 }
 
 void Game::render() {
-	glm::mat4 projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 100.0f);
-	// Camera matrix
-	glm::mat4 view = glm::lookAt(
-		glm::vec3(2, 0, 0), // Camera is at (4,3,3), in World Space
-		glm::vec3(0, 0, 0), // and looks at the origin
-		glm::vec3(0, 1, 0)  // Head is up (set to 0,-1,0 to look upside-down)
-	);
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), m_screen_width / (float)m_screen_height, 0.1f, 100.0f);
+	glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 	 
 	glm::mat4 mvp = projection * view * model;
 	auto mvp_location = glGetUniformLocation(shaderProgram, "mvp");
-	CheckGLError();
 	glUniformMatrix4fv(mvp_location, 1, false, &mvp[0][0]);
-
 	CheckGLError();
 
 	// Draw Scene
 	glBindVertexArray(VAO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices[0], GL_DYNAMIC_DRAW);
-	glDrawArrays(GL_TRIANGLES, 0, 3);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+
+	int size; glGetBufferParameteriv(GL_ELEMENT_ARRAY_BUFFER, GL_BUFFER_SIZE, &size);
+	glDrawElements(GL_TRIANGLES, size / sizeof(GLushort), GL_UNSIGNED_SHORT, 0);
 
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	// End Draw Scene
 }
 

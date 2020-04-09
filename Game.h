@@ -1,7 +1,7 @@
 #pragma once
 
 #include <array>
-
+#include <atomic>
 #include "glm/vec4.hpp"
 #include "glm/mat4x4.hpp"
 #include "glm/gtc/matrix_transform.hpp"
@@ -14,7 +14,7 @@ struct Vertex {
 class Game
 {
 public:
-	Game();
+	Game(const size_t screen_width, const size_t screen_height, const std::atomic<bool>* keys, const std::atomic<int>* delta_mouse);
 	void tick(double dt);
 	void render();
 
@@ -22,7 +22,12 @@ private:
 	void CheckShader(unsigned int shader);
 
 	glm::mat4 model;
-	std::array<Vertex, 3> vertices;
+	std::array<Vertex, 8> vertices;
+
+	const std::atomic<bool>* m_keys;
+	const std::atomic<int>* m_delta_mouse;
+	const size_t m_screen_width;
+	const size_t m_screen_height;
 
 	const char* vertexShaderSource = R"(
 		#version 330 core
@@ -51,7 +56,7 @@ private:
 		} 
 	)";
 
-	unsigned int VBO, VAO;
+	unsigned int VBO, VAO, ibo;
 	unsigned int vertexShader;
 	unsigned int fragmentShader;
 	unsigned int shaderProgram;

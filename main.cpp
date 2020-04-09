@@ -12,7 +12,7 @@
 #include "Game.h"
 #include "TimeLimiter.h"
 
-const static unsigned int SCREENWIDTH = 512, SCREENHEIGHT = 512;
+const static unsigned int SCREENWIDTH = 1024, SCREENHEIGHT = 512;
 
 void quit(const std::string& error) {
     std::cout << error << std::endl;
@@ -54,6 +54,9 @@ int main(int argc, char* argv[])
         SDL_WINDOW_OPENGL
     );
 
+    //SDL_CaptureMouse(SDL_TRUE);
+    SDL_SetRelativeMouseMode(SDL_TRUE);
+
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
     SDL_GLContext glContext = SDL_GL_CreateContext(window);
@@ -65,16 +68,22 @@ int main(int argc, char* argv[])
     glViewport(0, 0, SCREENWIDTH, SCREENHEIGHT);
 
     std::cout << glGetString(GL_VERSION) << std::endl;
+
+    std::atomic<bool> keys[0xFF] = { false };
+    std::atomic<int> delta_mouse[2] = { 0 };
     
-    Game g = Game();
+    Game g = Game(SCREENWIDTH, SCREENHEIGHT, keys, delta_mouse);
     bool running = true;
 
-    
+    glEnable(GL_DEPTH_TEST);
 
     std::thread tick([&]() {
-        auto tick_limiter = TimeLimiter(30);
+        auto tick_limiter = TimeLimiter(60);
         while (running) {
             g.tick(tick_limiter.dt());
+
+            delta_mouse[0] = 0;
+            delta_mouse[1] = 0;
             tick_limiter.sleep();
         }
     });
@@ -88,6 +97,28 @@ int main(int argc, char* argv[])
             if (event.type == SDL_QUIT) {
                 running = false;
             }
+            else if (event.type == SDL_KEYDOWN) {
+                if (event.key.keysym.sym == SDLK_ESCAPE) {
+                    SDL_SetRelativeMouseMode(SDL_FALSE);
+                }
+
+                if (event.key.keysym.sym > 0xFF) continue;
+                keys[(char)event.key.keysym.sym] = true;
+            }
+            else if (event.type == SDL_KEYUP) {
+                if (event.key.keysym.sym > 0xFF) continue;
+                keys[(char)event.key.keysym.sym] = false;
+            }
+            else if (event.type == SDL_MOUSEMOTION) {
+                if (SDL_GetRelativeMouseMode() == SDL_FALSE) continue;
+                delta_mouse[0] = event.motion.xrel;
+                delta_mouse[1] = event.motion.yrel;
+            }
+            else if (event.type == SDL_MOUSEBUTTONDOWN) {
+                if (event.button.button == SDL_BUTTON_LEFT) {
+                    SDL_SetRelativeMouseMode(SDL_TRUE);
+                }
+            }
         }
 
         if (frame_counter > fps) {
@@ -99,7 +130,7 @@ int main(int argc, char* argv[])
         ++frame_counter;
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
         g.render();
 
