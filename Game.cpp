@@ -34,11 +34,12 @@ void CheckGLError()
 }
 
 
-Game::Game(const size_t screen_width, const size_t screen_height, const std::atomic<bool>* keys, const std::atomic<int>* delta_mouse)
+Game::Game(const size_t screen_width, const size_t screen_height, const std::atomic<bool>* keys, const std::atomic<int>* mouse_delta)
 	: m_screen_width(screen_width)
 	, m_screen_height(screen_height)
 	, m_keys(keys)
-	, m_delta_mouse(delta_mouse)
+	, m_mouse_delta(mouse_delta)
+	, m_terrain()
 {
 
 	//
@@ -124,10 +125,10 @@ Game::Game(const size_t screen_width, const size_t screen_height, const std::ato
 	CheckGLError();
 
 	model = glm::mat4(1.0f);  
-	model = glm::translate(model, glm::vec3(0, 0, 0));
+	model = glm::translate(model, glm::vec3(0, 2, 0));
 }
 
-static glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+static glm::vec3 cameraPos = glm::vec3(0.0f, 2.0f, 10.0f);
 static glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 static glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 static float cameraSpeed = 0.1f;
@@ -145,8 +146,8 @@ void Game::tick(double dt) {
 	if (m_keys[SDLK_q]) cameraPos -= cameraSpeed * cameraUp;
 	if (m_keys[SDLK_e]) cameraPos += cameraSpeed * cameraUp;
 
-	yaw += m_delta_mouse[0] * cameraRotationSpeed;
-	pitch += m_delta_mouse[1] * cameraRotationSpeed;
+	yaw += m_mouse_delta[0] * cameraRotationSpeed;
+	pitch += m_mouse_delta[1] * cameraRotationSpeed;
 
 	if (pitch > 89.0f)
 		pitch = 89.0f;
@@ -159,7 +160,7 @@ void Game::tick(double dt) {
 	direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
 	cameraFront = glm::normalize(direction);
 
-	model = glm::rotate(model, glm::radians(1.0f), glm::vec3(0, 1, 0));
+	model = glm::rotate(model, glm::radians(1.0f), glm::vec3(0.3, 0.1, 0.7));
 	
 	auto t = static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count()) / 1000.0;
 
@@ -174,28 +175,36 @@ void Game::tick(double dt) {
 	vertices[2].col.r = (std::sin(t - 3.14 / 2) + 1.0) / 2.0f;
 	vertices[2].col.g = (std::sin(1.1 * t - 3.14 / 4) + 1.0) / 2.0f;
 	vertices[2].col.b = (std::sin(1.5 * t - 1) + 1.0) / 2.0f;
+
+	m_terrain.tick();
 }
 
 void Game::render() {
 	glm::mat4 projection = glm::perspective(glm::radians(45.0f), m_screen_width / (float)m_screen_height, 0.1f, 100.0f);
 	glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 	 
-	glm::mat4 mvp = projection * view * model;
+	glm::mat4 pv = projection * view;
+
+	glm::mat4 mvp =  pv * model;
 	auto mvp_location = glGetUniformLocation(shaderProgram, "mvp");
 	glUniformMatrix4fv(mvp_location, 1, false, &mvp[0][0]);
 	CheckGLError();
 
-	// Draw Scene
+	// Draw game scenecene
 	glBindVertexArray(VAO);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices[0], GL_STATIC_DRAW);
 
 	int size; glGetBufferParameteriv(GL_ELEMENT_ARRAY_BUFFER, GL_BUFFER_SIZE, &size);
 	glDrawElements(GL_TRIANGLES, size / sizeof(GLushort), GL_UNSIGNED_SHORT, 0);
 
 	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	// End Draw Scene
+
+	m_terrain.render(shaderProgram, pv);
 }
 
 void Game::CheckShader(unsigned int shader) {

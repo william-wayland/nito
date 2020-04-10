@@ -1,15 +1,10 @@
 #pragma once
-
 #include <array>
 #include <atomic>
-#include "glm/vec4.hpp"
-#include "glm/mat4x4.hpp"
-#include "glm/gtc/matrix_transform.hpp"
 
-struct Vertex {
-	glm::vec4 pos{ 0.0f };
-	glm::vec4 col{ 1.0f };
-};
+#include "Definitions.h"
+
+#include "Terrain.h"
 
 class Game
 {
@@ -21,11 +16,13 @@ public:
 private:
 	void CheckShader(unsigned int shader);
 
+	Terrain m_terrain;
+
 	glm::mat4 model;
 	std::array<Vertex, 8> vertices;
 
 	const std::atomic<bool>* m_keys;
-	const std::atomic<int>* m_delta_mouse;
+	const std::atomic<int>* m_mouse_delta;
 	const size_t m_screen_width;
 	const size_t m_screen_height;
 

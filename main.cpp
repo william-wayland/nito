@@ -70,9 +70,9 @@ int main(int argc, char* argv[])
     std::cout << glGetString(GL_VERSION) << std::endl;
 
     std::atomic<bool> keys[0xFF] = { false };
-    std::atomic<int> delta_mouse[2] = { 0 };
+    std::atomic<int> mouse_delta[2] = { 0 };
     
-    Game g = Game(SCREENWIDTH, SCREENHEIGHT, keys, delta_mouse);
+    Game g = Game(SCREENWIDTH, SCREENHEIGHT, keys, mouse_delta);
     bool running = true;
 
     glEnable(GL_DEPTH_TEST);
@@ -82,8 +82,8 @@ int main(int argc, char* argv[])
         while (running) {
             g.tick(tick_limiter.dt());
 
-            delta_mouse[0] = 0;
-            delta_mouse[1] = 0;
+            mouse_delta[0] = 0;
+            mouse_delta[1] = 0;
             tick_limiter.sleep();
         }
     });
@@ -111,8 +111,8 @@ int main(int argc, char* argv[])
             }
             else if (event.type == SDL_MOUSEMOTION) {
                 if (SDL_GetRelativeMouseMode() == SDL_FALSE) continue;
-                delta_mouse[0] = event.motion.xrel;
-                delta_mouse[1] = event.motion.yrel;
+                mouse_delta[0] = event.motion.xrel;
+                mouse_delta[1] = event.motion.yrel;
             }
             else if (event.type == SDL_MOUSEBUTTONDOWN) {
                 if (event.button.button == SDL_BUTTON_LEFT) {
