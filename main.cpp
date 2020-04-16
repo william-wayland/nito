@@ -12,7 +12,7 @@
 #include "Game.h"
 #include "TimeLimiter.h"
 
-const static unsigned int SCREENWIDTH = 1024, SCREENHEIGHT = 512;
+const static unsigned int SCREENWIDTH = 1000, SCREENHEIGHT = 1000;
 
 void quit(const std::string& error) {
     std::cout << error << std::endl;
@@ -54,16 +54,15 @@ int main(int argc, char* argv[])
         SDL_WINDOW_OPENGL
     );
 
-    //SDL_CaptureMouse(SDL_TRUE);
     SDL_SetRelativeMouseMode(SDL_TRUE);
 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
     SDL_GLContext glContext = SDL_GL_CreateContext(window);
     SDL_GL_MakeCurrent(window, glContext);
+    SDL_GL_SetSwapInterval(1);
 
     glewInit();
-
 
     glViewport(0, 0, SCREENWIDTH, SCREENHEIGHT);
 
@@ -77,21 +76,18 @@ int main(int argc, char* argv[])
 
     glEnable(GL_DEPTH_TEST);
 
-    std::thread tick([&]() {
-        auto tick_limiter = TimeLimiter(60);
-        while (running) {
-            g.tick(tick_limiter.dt());
-
-            mouse_delta[0] = 0;
-            mouse_delta[1] = 0;
-            tick_limiter.sleep();
-        }
-    });
-
     int frame_counter = 0;
     const int fps = 60;
-    auto frame_limiter = TimeLimiter(fps);
+  
+    Uint64 now = SDL_GetPerformanceCounter();
+    Uint64 last = 0;
+    double delta_time = 0;
+
     while (running) {
+        last = now;
+        now = SDL_GetPerformanceCounter();
+        delta_time = (double)((now - last) / (double)SDL_GetPerformanceFrequency());
+
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
@@ -123,7 +119,7 @@ int main(int argc, char* argv[])
 
         if (frame_counter > fps) {
             char title[50];
-            snprintf(title, 50, "Programming FPS: %f", frame_limiter.dt() * fps * fps);
+            snprintf(title, 50, "Programming FPS: %f", (float)(1/delta_time));
             SDL_SetWindowTitle(window, title);
             frame_counter = 0;
         }
@@ -132,13 +128,15 @@ int main(int argc, char* argv[])
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
+        g.tick(delta_time);
         g.render();
 
+        mouse_delta[0] = 0;
+        mouse_delta[1] = 0;
+
         SDL_GL_SwapWindow(window);
-        frame_limiter.sleep();
     }
 
-    tick.join();
     SDL_GL_DeleteContext(glContext);
     SDL_DestroyWindow(window);
     SDL_Quit();
