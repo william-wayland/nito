@@ -28,6 +28,8 @@ public:
     void setVec4(const std::string& name, glm::vec4 value) const;
     void setMat4(const std::string& name, glm::mat4 value) const;
 
+    int getInt(const std::string& name) const;
+
 private:
     void CheckShader(unsigned int shader, unsigned int status) const;
     GLuint CompileShader(std::string& source, unsigned int shader_type) const;

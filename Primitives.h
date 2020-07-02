@@ -32,7 +32,10 @@ public:
 	}
 
 	static void Render(const std::string& name) {
-		glBindVertexBuffer(0, Primitives::GetVBO(name), 0, sizeof(NormalVertex));
+		glEnableVertexAttribArray(0);
+		glEnableVertexAttribArray(1);
+		glBindVertexBuffer(0, Primitives::GetVBO(name), offsetof(NormalVertex, pos), sizeof(NormalVertex));
+		glBindVertexBuffer(1, Primitives::GetVBO(name), offsetof(NormalVertex, nor), sizeof(NormalVertex));
 		glDrawArrays(GL_TRIANGLES, 0, Primitives::GetVertexCount(name));
 		glBindVertexBuffer(0, 0, 0, 0);
 	}
@@ -100,34 +103,28 @@ public:
 
 		glGenVertexArrays(1, &vao);
 		glBindVertexArray(vao);
-		glEnableVertexAttribArray(0);
+		/*glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(NormalVertex), (void*)offsetof(NormalVertex, pos));
 
 		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(NormalVertex), (void*)offsetof(NormalVertex, nor));
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(NormalVertex), (void*)offsetof(NormalVertex, nor));*/
 
 		glBindVertexArray(0);
 
 		ContructPrimitive("box", box_vertices);
 		ContructPrimitive("triangle", triangle_vertices);
 		ContructPrimitive("plane", plane_vertices);
+
+		
 	}
 
 private: 
 	static void ContructPrimitive(const std::string& name, const std::vector<NormalVertex>& vertices) {
-		GLuint vao, vbo;
-		glGenVertexArrays(1, &vao);
-		glBindVertexArray(vao);
+		GLuint vbo;
 
 		glGenBuffers(1, &vbo);
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
 		glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(NormalVertex), vertices.data(), GL_STATIC_DRAW);
-
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(NormalVertex), (void*)offsetof(NormalVertex, pos));
-
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(NormalVertex), (void*)offsetof(NormalVertex, nor));
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 
