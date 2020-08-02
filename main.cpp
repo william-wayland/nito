@@ -16,7 +16,7 @@
 #include "imgui/imgui_impl_sdl.h"
 #include "imgui/imgui_impl_opengl3.h"
 
-const static unsigned int SCREENWIDTH = 1000, SCREENHEIGHT = 1000;
+const static size_t SCREENWIDTH = 1000, SCREENHEIGHT = 1000;
 
 void quit(const std::string& error) {
     std::cout << error << std::endl;
@@ -27,20 +27,18 @@ void CheckSDLError(int line = -1)
 {
     std::string error = SDL_GetError();
 
-    if (error != "")
-    {
+    if (error != "") {
         std::cout << "SLD Error : " << error << std::endl;
 
-        if (line != -1)
+        if (line != -1) {
             std::cout << "\nLine : " << line << std::endl;
+        }
 
         SDL_ClearError();
     }
 }
 
-
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         quit("Failed to init SDL2");
     }
@@ -77,10 +75,9 @@ int main(int argc, char* argv[])
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
 
-
     std::cout << glGetString(GL_VERSION) << std::endl;
 
-    // ** Setup Dear ImGUI
+    // Setup Dear ImGUI 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
@@ -94,8 +91,6 @@ int main(int argc, char* argv[])
     
     Game g = Game(SCREENWIDTH, SCREENHEIGHT, keys, mouse_delta);
     bool running = true;
-
- 
 
     int frame_counter = 0;
     const int fps = 60;
@@ -162,7 +157,7 @@ int main(int argc, char* argv[])
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
-        g.tick(delta_time);
+        g.tick(static_cast<float>(delta_time));
         g.render(SDL_GetRelativeMouseMode() == SDL_FALSE);
 
         // Rendering

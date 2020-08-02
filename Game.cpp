@@ -34,7 +34,8 @@ Game::Game(const size_t screen_width, const size_t screen_height, const std::ato
 	, m_mouse_delta(mouse_delta)
 	, m_terrain("data/heightmap-96x64.png", glm::vec3(-20, -1, -20))
 	, m_flat_land(100, 100, 1, glm::vec3(-50, 0, -50))
-	, m_camera(glm::vec3(0.0f,3.0f, 5.0f), keys, mouse_delta)
+	, m_camera(glm::vec3(0.0f, 3.0f, 5.0f), keys, mouse_delta)
+	, m_camera_speed(13.5f)
 	, m_default_shader("shaders/default.vertex.fx", "shaders/default.fragment.fx")
 	, m_box_shader("shaders/box.vertex.fx", "shaders/box.fragment.fx")
 	, m_coloured_box_shader("shaders/coloured_box.vertex.fx", "shaders/coloured_box.fragment.fx")
@@ -58,6 +59,7 @@ Game::Game(const size_t screen_width, const size_t screen_height, const std::ato
 }
 
 void Game::tick(float dt) {
+	m_camera.setCameraSensitivity(m_camera_speed);
 	m_camera.tick(dt);
 	m_terrain.tick();
 }
@@ -78,9 +80,8 @@ void Game::render(bool menu) {
 	static float fov = 60.0;
 	static float scale = 1.0f;
 	static auto light_colour = glm::vec3(1.f, 1.0f, 1.0f);
-	static auto light_pos = glm::vec3(0.0f, 4.0f, 0.0f);
 	static auto light_dir = glm::vec3(-0.2f, -1.0f, -0.3f);
-	static auto gamma = 2.2f;
+	static auto gamma = 1.2f;
 
 	if (menu) {
 		ImGui::Begin("Nito");  
@@ -88,10 +89,13 @@ void Game::render(bool menu) {
 		ImGui::SliderFloat("scale", &scale, 0.01f, 10.0f);
 		ImGui::SliderFloat("gamma", &gamma, 0.0f, 4.0f);
 		ImGui::SliderFloat3("light colour", glm::value_ptr(light_colour), 0, 1);
-		ImGui::SliderFloat3("light pos", glm::value_ptr(light_pos), -100, 100);
 		ImGui::SliderFloat3("light dir", glm::value_ptr(light_dir), -1, 1);
 
-		ImGui::End();
+		ImGui::Spacing();
+
+		ImGui::SliderFloat("Mouse Sensitivity", &m_camera_speed, 0.01f, 15.0f);
+
+		ImGui::End();  
 	}
 	
 	glm::mat4 projection = glm::perspective(glm::radians(fov), m_screen_width / (float)m_screen_height, 1.0f, 100.0f);
@@ -104,10 +108,9 @@ void Game::render(bool menu) {
 		// Light
 		m_coloured_box_shader.use();
 		m_coloured_box_shader.setMat4("view_projection", pv);
-		m_coloured_box_shader.setMat4("model", glm::translate(glm::mat4(1), light_pos));
 		m_coloured_box_shader.setVec3("colour", light_colour);
 
-		for (unsigned int i = 0; i < m_point_lights; i++) {
+		for (int i = 0; i < m_point_lights; i++) {
 			auto model = glm::translate(glm::mat4(1.0f), pointLightPositions[i]);
 			m_coloured_box_shader.setMat4("model", model);
 			Primitives::Render("box");
@@ -122,7 +125,6 @@ void Game::render(bool menu) {
 		m_model_shader.setVec3("light.specular", 0.5f * light_colour);
 		m_model_shader.setVec3("_eye", m_camera.pos());
 		m_model_shader.setVec3("light_color", light_colour);
-		m_model_shader.setVec3("light_pos", light_pos);
 
 		m_model_shader.setVec3("material.ambient", glm::vec3(0.05375, 0.05, 0.06625));
 		m_model_shader.setVec3("material.diffuse", glm::vec3(0.58275, 0.17, 0.22525));
@@ -144,14 +146,14 @@ void Game::render(bool menu) {
 		m_model_shader.setMat4("model", glm::scale(glm::translate(glm::mat4(1), glm::vec3(-3, 3, -3)), glm::vec3(100, 0.1, 100)));
 		m_model_shader.setFloat("gamma", gamma);
 
-		for (unsigned int i = 0; i < m_point_lights; i++) {
+		for (int i = 0; i < m_point_lights; i++) {
 			m_model_shader.setVec3("point_lights[" + std::to_string(i) + "].position", pointLightPositions[i]);
-			m_model_shader.setVec3("point_lights[" + std::to_string(i) + "].ambient", glm::vec3(0.05f, 0.05f, 0.05f));
-			m_model_shader.setVec3("point_lights[" + std::to_string(i) + "].diffuse", glm::vec3(0.8f, 0.8f, 0.8f));
-			m_model_shader.setVec3("point_lights[" + std::to_string(i) + "].specular", glm::vec3(1.0f, 1.0f, 1.0f));
+			m_model_shader.setVec3("point_lights[" + std::to_string(i) + "].ambient", glm::vec3(0.05f, 0.05f, 0.05f) * light_colour);
+			m_model_shader.setVec3("point_lights[" + std::to_string(i) + "].diffuse", glm::vec3(0.8f, 0.8f, 0.8f) * light_colour);
+			m_model_shader.setVec3("point_lights[" + std::to_string(i) + "].specular", glm::vec3(1.0f, 1.0f, 1.0f) * light_colour);
 			m_model_shader.setFloat("point_lights[" + std::to_string(i) + "].constant", 0.5f);
-			m_model_shader.setFloat("point_lights[" + std::to_string(i) + "].linear", 0.09);
-			m_model_shader.setFloat("point_lights[" + std::to_string(i) + "].quadratic", 0.032);
+			m_model_shader.setFloat("point_lights[" + std::to_string(i) + "].linear", 0.09f);
+			m_model_shader.setFloat("point_lights[" + std::to_string(i) + "].quadratic", 0.032f);
 		}
 
 		m_flat_land.render(m_model_shader);

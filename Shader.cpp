@@ -96,6 +96,8 @@ void Shader::setMat4(const std::string& name, glm::mat4 value) const
 int Shader::getInt(const std::string& name) const
 {
 	int out = 0;
-	glGetUniformiv(id, glGetUniformLocation(id, name.c_str()), &out);
+	const auto loc = glGetUniformLocation(id, name.c_str());
+	assert(loc != -1);
+	glGetUniformiv(id, loc, &out);
 	return out;
 }

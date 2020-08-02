@@ -20,6 +20,7 @@ private:
 	Terrain m_terrain;
 	Terrain m_flat_land;
 	Camera m_camera;
+	float m_camera_speed;
 
 	Shader m_default_shader;
 	Shader m_box_shader;

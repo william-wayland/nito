@@ -128,7 +128,7 @@ private:
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-		named.emplace(name, std::make_pair(vbo, vertices.size()));
+		named[name] = std::make_pair(vbo, vertices.size());
 	}
 };
 

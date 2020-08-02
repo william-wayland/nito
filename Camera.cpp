@@ -22,8 +22,8 @@ void Camera::tick(float dt)
 	if (m_keys[SDLK_q]) m_pos -= speed * m_up;
 	if (m_keys[SDLK_e]) m_pos += speed * m_up;
 
-	m_yaw += m_mouse_delta[0] * m_rotationSpeed * dt;
-	m_pitch += m_mouse_delta[1] * m_rotationSpeed * dt;
+	m_yaw += m_mouse_delta[0] * m_rotation_speed * dt;
+	m_pitch += m_mouse_delta[1] * m_rotation_speed * dt;
 	
 	if (m_pitch > 89.0f)
 		m_pitch = 89.0f;
