@@ -34,3 +34,9 @@ void Terrain::render(Shader& shader) {
 	
 	m_hm.render();
 }
+
+float Terrain::heightAt(float x, float z)
+{
+	const auto pos = glm::vec3(m_model[3]);
+	return m_hm.heightAt(x - pos.x, z - pos.z);
+}

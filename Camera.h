@@ -15,7 +15,7 @@ public:
 	void tick(float dt);
 	glm::mat4 lookAt();
 
-	const glm::vec3& pos() const { return m_pos; }
+	glm::vec3& pos() { return m_pos; }
 
 private:
 	glm::vec3 m_pos;

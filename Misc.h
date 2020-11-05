@@ -53,3 +53,6 @@ static std::string Loadfile(const char* path) {
 
 	return "";
 }
+
+template <typename T>
+inline T lerp(T a, T b, T t) { return a + t * (b - a); }

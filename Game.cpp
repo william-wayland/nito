@@ -27,15 +27,19 @@ glm::mat4 z_trans = glm::mat4(1);
 
 auto then = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
+std::string print(glm::vec3 v) {
+	return "(" + std::to_string(v.x) + ", " + std::to_string(v.z) + ", " + std::to_string(v.z) + ")";
+}
+
 Game::Game(const size_t screen_width, const size_t screen_height, const std::atomic<bool>* keys, const std::atomic<int>* mouse_delta)
 	: m_screen_width(screen_width)
 	, m_screen_height(screen_height)
 	, m_keys(keys)
 	, m_mouse_delta(mouse_delta)
-	, m_terrain("data/heightmap-96x64.png", glm::vec3(-20, -1, -20))
+	, m_terrain("data/height_map_test.png", glm::vec3(0, 0, 0))
 	, m_flat_land(100, 100, 1, glm::vec3(-50, 0, -50))
-	, m_camera(glm::vec3(0.0f, 3.0f, 5.0f), keys, mouse_delta)
-	, m_camera_speed(13.5f)
+	, m_camera(glm::vec3(0.001f, 2.0f, 0.001f), keys, mouse_delta)
+	, m_camera_speed(30.0f)
 	, m_default_shader("shaders/default.vertex.fx", "shaders/default.fragment.fx")
 	, m_box_shader("shaders/box.vertex.fx", "shaders/box.fragment.fx")
 	, m_coloured_box_shader("shaders/coloured_box.vertex.fx", "shaders/coloured_box.fragment.fx")
@@ -56,12 +60,15 @@ Game::Game(const size_t screen_width, const size_t screen_height, const std::ato
 
 	m_model_shader.use();
 	m_point_lights = m_model_shader.getInt("n_point_light");
+
 }
 
 void Game::tick(float dt) {
 	m_camera.setCameraSensitivity(m_camera_speed);
 	m_camera.tick(dt);
 	m_terrain.tick();
+
+	std::cout << "(" << m_camera.pos().x << ", " << m_camera.pos().z << ") - " << m_terrain.heightAt(m_camera.pos().x, m_camera.pos().z) << std::endl;
 }
 
 glm::vec3 pointLightPositions[] = {
@@ -93,7 +100,11 @@ void Game::render(bool menu) {
 
 		ImGui::Spacing();
 
-		ImGui::SliderFloat("Mouse Sensitivity", &m_camera_speed, 0.01f, 15.0f);
+		ImGui::SliderFloat("Mouse Sensitivity", &m_camera_speed, 0.01f, 100.0f);
+
+		ImGui::Spacing();
+
+		ImGui::SliderFloat3("Eye Pos", glm::value_ptr(m_camera.pos()), 0, 2);
 
 		ImGui::End();  
 	}

@@ -18,6 +18,7 @@ public:
 	Terrain(int width, int height, float scale, const glm::vec3& translate);
 	void tick();
 	void render(Shader& shaderProgram);
+	float heightAt(float x, float y);
 private:
 	glm::mat4 m_model;
 	HeightMap m_hm;
