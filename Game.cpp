@@ -36,7 +36,7 @@ Game::Game(const size_t screen_width, const size_t screen_height, const std::ato
 	, m_screen_height(screen_height)
 	, m_keys(keys)
 	, m_mouse_delta(mouse_delta)
-	, m_terrain("data/height_map_test.png", glm::vec3(0, 0, 0))
+	, m_terrain("data/heightmap-96x64.png", glm::vec3(0, 0, 0))
 	, m_flat_land(100, 100, 1, glm::vec3(-50, 0, -50))
 	, m_camera(glm::vec3(0.001f, 2.0f, 0.001f), keys, mouse_delta)
 	, m_camera_speed(30.0f)

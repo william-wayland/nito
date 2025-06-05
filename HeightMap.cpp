@@ -25,7 +25,7 @@ HeightMap::HeightMap(const std::string& path) {
 
 	auto n = glm::vec3(0, 1, 0);
 	auto wscale = 1.0f;
-	auto vscale = 1.0f / 256.0f;
+	auto vscale = 1.0f / 16.0f;
 
 	for (int y = 0; y < height - 1; y++) {
 		for (int x = 0; x < width - 1; x++) {
